@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Autumn brown/ivory palette */
+  --surface: #fff8ef;      /* ivory */
+  --surface-2: #fff1e1;    /* lighter ivory */
+  --border: #e7d7c4;       /* warm beige border */
+  --accent: #6f4f37;       /* brown */
+  --accent-hover: #5f432f; /* darker brown */
+  --text: #2b2622;         /* deep warm text */
+  --muted: #6b5b4d;        /* muted caption */
+}
+
+html, body {
+  background: var(--surface);
+  color: var(--text);
+  font-family: Gulim, "굴림", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
