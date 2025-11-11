@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from celery.result import AsyncResult
-from tasks import app as celery_app
+from .tasks import app as celery_app
 
 
 class EnqueueBody(BaseModel):
@@ -31,3 +31,7 @@ def get_result(task_id: str):
             payload["error"] = "unknown error"
     return payload
 
+
+@api.get("/result/health-check")
+def health_check():
+    return {"ok": True}

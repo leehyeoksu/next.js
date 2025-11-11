@@ -40,3 +40,10 @@ backend/.venv/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.env.local                                                            
+node_modules/                                                         
+.next/                                                                
+backend/.venv/                                                        
+backend/.venv-linux/                                                  
+**/__pycache__/                                                       
+*.pyc            

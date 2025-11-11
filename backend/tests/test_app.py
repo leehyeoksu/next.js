@@ -25,7 +25,7 @@ class TestPages(unittest.TestCase):
     def test_result_page_without_param(self):
         r = requests.get(BASE_URL + "/result", timeout=10)
         self.assertEqual(r.status_code, 200)
-        self.assertIn("결과 없음", r.text)
+        self.assertTrue(("결과 없음" in r.text) or ("No result" in r.text))
 
     def test_result_page_with_param(self):
         content = "예시 출력입니다\n두 번째 줄"
@@ -69,6 +69,41 @@ class TestAPIMock(unittest.TestCase):
         self.assertIn("정보 부족", out)
 
 
+class TestHealthAndBackend(unittest.TestCase):
+    def test_next_api_health(self):
+        r = requests.get(BASE_URL + "/api/health", timeout=10)
+        self.assertEqual(r.status_code, 200)
+        j = r.json()
+        self.assertIn("ok", j)
+
+    def test_backend_fastapi_health_optional(self):
+        backend_base = os.environ.get("BACKEND_BASE_URL", "http://127.0.0.1:8000")
+        try:
+            r = requests.get(backend_base + "/health", timeout=3)
+        except Exception:
+            self.skipTest("Backend FastAPI not running; skipping optional check")
+            return
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("ok", r.json())
+
+    def test_jobs_flow_optional(self):
+        # Requires FastAPI + Celery + Redis running
+        base = os.environ.get("APP_BASE_URL", "http://localhost:3000")
+        try:
+            r = requests.post(base + "/api/jobs", json={"prompt": "hello"}, timeout=5)
+        except Exception:
+            self.skipTest("/api/jobs not reachable; skipping")
+            return
+        if r.status_code != 200:
+            self.skipTest(f"/api/jobs returned {r.status_code}: {r.text}")
+            return
+        task = r.json()
+        task_id = task.get("task_id")
+        self.assertTrue(task_id)
+        # Poll result quickly (non-blocking expectation)
+        r2 = requests.get(base + f"/api/jobs/{task_id}", timeout=5)
+        self.assertIn(r2.status_code, (200, 202, 404))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
-

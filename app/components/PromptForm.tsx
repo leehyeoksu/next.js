@@ -3,42 +3,87 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Spinner from "./Spinner";
+import { useToast } from "./Toast";
 
 export default function PromptForm() {
   const router = useRouter();
+  const toast = useToast();
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [queueing, setQueueing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    // 단일 경로: Celery 큐로 전송 후 폴링
+    e.preventDefault();
+    await handleQueue({ preventDefault() {} } as any);
+  };
+
+  const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+  const handleQueue = async (e: React.MouseEvent) => {
     e.preventDefault();
     setError(null);
     if (!prompt.trim()) {
-      setError("프롬프트를 입력해주세요");
+      setError("프롬프트를 입력해 주세요.");
       return;
     }
-
-    setLoading(true);
+    setQueueing(true);
     try {
-      const res = await fetch("/api/gpt", {
+      const toastId = toast.show("큐 등록 중...", "info");
+      const enq = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
       });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const msg = data?.error || `요청 실패 (${res.status})`;
+      const enqData = await enq.json().catch(() => ({}));
+      if (!enq.ok) {
+        const msg = enqData?.error || `큐 등록 실패 (${enq.status})`;
+        toast.update(toastId, msg, "error", { autoCloseMs: 4000 });
         throw new Error(msg);
       }
+      const taskId = enqData?.task_id as string;
+      if (!taskId) {
+        toast.update(toastId, "task_id를 받지 못했습니다.", "error", { autoCloseMs: 4000 });
+        throw new Error("task_id를 받지 못했습니다.");
+      }
 
-      const out = typeof data?.output === "string" ? data.output : "";
-      if (!out) throw new Error("유효한 응답을 받지 못했습니다");
-      router.push(`/result?out=${encodeURIComponent(out)}`);
+      const deadline = Date.now() + 30000; // 30s
+      toast.update(toastId, "처리 중...", "info");
+      while (Date.now() < deadline) {
+        const r = await fetch(`/api/jobs/${encodeURIComponent(taskId)}`);
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const msg = data?.error || `결과 조회 실패 (${r.status})`;
+          toast.update(toastId, msg, "error", { autoCloseMs: 4000 });
+          throw new Error(msg);
+        }
+        const state = data?.state as string;
+        if (state === "SUCCESS") {
+          const resultOut = typeof data?.result === "string" ? data.result : "";
+          if (!resultOut) {
+            toast.update(toastId, "결과가 비어 있습니다.", "error", { autoCloseMs: 4000 });
+            throw new Error("결과가 비어 있습니다.");
+          }
+          toast.update(toastId, "완료되었습니다.", "success", { autoCloseMs: 1500 });
+          router.push(`/result?out=${encodeURIComponent(resultOut)}`);
+          return;
+        }
+        if (state === "FAILURE" || state === "REVOKED") {
+          const msg = `작업 실패: ${state}`;
+          toast.update(toastId, msg, "error", { autoCloseMs: 4000 });
+          throw new Error(msg);
+        }
+        await sleep(1000);
+      }
+      toast.update("", "", "info");
+      const timeoutMsg = "시간 내에 결과를 받지 못했습니다.";
+      toast.show(timeoutMsg, "error", { autoCloseMs: 4000 });
+      throw new Error(timeoutMsg);
     } catch (err: any) {
       setError(err?.message || "알 수 없는 오류가 발생했습니다.");
     } finally {
-      setLoading(false);
+      setQueueing(false);
     }
   };
 
@@ -65,12 +110,15 @@ export default function PromptForm() {
         <div className="mt-4 flex items-center gap-3">
           <button
             type="submit"
-            disabled={loading || !prompt.trim()}
+            disabled={loading || queueing || !prompt.trim()}
             className="rounded-md bg-[var(--accent)] px-4 py-2 text-white shadow-sm hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Celery 큐로 보내고 결과 대기"
           >
-            제출
+            생성
           </button>
-          {loading && <Spinner label="loading..." size={18} />}
+          {(loading || queueing) && (
+            <Spinner label={loading ? "loading..." : "queueing..."} size={18} />
+          )}
         </div>
 
         {error && (

@@ -1,6 +1,8 @@
 import "./globals.css";
 import React from "react";
 import Link from "next/link";
+import ClientProviders from "./components/ClientProviders";
+import StatusBanner from "./components/StatusBanner";
 
 export default function RootLayout({
   children,
@@ -33,7 +35,12 @@ export default function RootLayout({
           </div>
         </header>
 
-        <main className="mx-auto max-w-3xl px-4 py-8">{children}</main>
+        <main className="mx-auto max-w-3xl px-4 py-8">
+          <ClientProviders>
+            <StatusBanner />
+            {children}
+          </ClientProviders>
+        </main>
 
         <footer className="border-t border-[var(--border)] bg-[var(--surface-2)]/60">
           <div className="mx-auto max-w-3xl px-4 py-4 text-sm text-[var(--muted)]">
@@ -44,4 +51,3 @@ export default function RootLayout({
     </html>
   );
 }
-

@@ -8,7 +8,12 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:next": "next dev",
+    "dev:api": "python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000",
+    "dev:celery": "celery -A backend.celery_app worker -l info",
+    "backend:setup": "powershell -ExecutionPolicy Bypass -File ./backend/scripts/setup.ps1",
+    "backend:test": "powershell -ExecutionPolicy Bypass -File ./backend/scripts/test.ps1",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
