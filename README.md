@@ -35,15 +35,13 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Testing (Python, optional)
+## Backend Tests (Python)
 
-There is a simple Python unittest suite under `review/python-tests` that exercises the running app (HTTP requests to `http://localhost:3000`).
+Backend-oriented tests live in `backend/`. They call the running Next.js app over HTTP.
 
-- Requirements: Python 3.9+, `pip install -r review/python-tests/requirements.txt`
-- Start app locally first: `npm run dev`
-- Run tests (from any directory):
-  - PowerShell example:
-    - `$env:APP_BASE_URL = "http://localhost:3000"` (optional)
-    - `python -m unittest -v review/python-tests/test_app.py`
+- Start app: `npm run dev` (default http://localhost:3000)
+- Setup venv (PowerShell): `./backend/scripts/setup.ps1`
+- Run tests (PowerShell): `./backend/scripts/test.ps1`
+- Optional: change base URL in the same terminal: `$env:APP_BASE_URL = "http://localhost:3000"`
 
 Note: The test suite assumes `LLM_PROVIDER=mock` so `/api/gpt` does not call external services.
