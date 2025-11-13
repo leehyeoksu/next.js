@@ -77,7 +77,7 @@ export async function POST(req: Request) {
 
     if (provider === "ollama") {
       const base = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-      const ollamaModel = process.env.OLLAMA_MODEL || "llama3.2:3b-instruct";
+      const ollamaModel = process.env.OLLAMA_MODEL || "llama3.2:3b";
       try {
         const resp = await fetch(`${base}/api/chat`, {
           method: "POST",
@@ -163,4 +163,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
-

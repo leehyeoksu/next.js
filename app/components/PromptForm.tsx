@@ -89,8 +89,8 @@ export default function PromptForm() {
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl">
-      <div className="rounded-lg border border-[var(--border)] bg-white p-5 shadow-sm">
-        <label htmlFor="prompt" className="mb-2 block text-sm font-medium text-stone-900">
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-5 shadow-sm">
+        <label htmlFor="prompt" className="mb-2 block text-sm font-medium text-[var(--text)]">
           프롬프트
         </label>
         <textarea
@@ -100,9 +100,9 @@ export default function PromptForm() {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="요청 내용을 입력하세요"
           rows={8}
-          className="w-full resize-y rounded-md border border-[var(--border)] p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
+          className="w-full resize-y rounded-md border border-[var(--border)] bg-black text-white placeholder:text-slate-400 caret-white p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)]"
         />
-        <div className="mt-2 flex items-center justify-between text-xs text-stone-500">
+        <div className="mt-2 flex items-center justify-between text-xs text-[var(--muted)]">
           <span>예: "CSV를 요약하는 프롬프트"</span>
           <span>{prompt.length}</span>
         </div>
@@ -111,7 +111,7 @@ export default function PromptForm() {
           <button
             type="submit"
             disabled={loading || queueing || !prompt.trim()}
-            className="rounded-md bg-[var(--accent)] px-4 py-2 text-white shadow-sm hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-full bg-[var(--button)] px-5 py-2 text-[#e5e7eb] shadow-sm hover:bg-[var(--button-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed"
             title="Celery 큐로 보내고 결과 대기"
           >
             생성

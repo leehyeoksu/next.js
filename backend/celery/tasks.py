@@ -2,6 +2,7 @@ import os
 import json
 import requests
 from celery import Celery
+from typing import List, Optional
 
 
 # Redis broker/backend (DB 0 for broker, 1 for results)
@@ -71,8 +72,64 @@ def transform_prompt(prompt: str) -> str:
 
     # 1) Ollama (로컬 무료 모델)
     if provider == "ollama":
-        base = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").strip() or "http://localhost:11434"
-        model = os.environ.get("OLLAMA_MODEL", "llama3.2:3b-instruct").strip() or "llama3.2:3b-instruct"
+        def _read_windows_host_ip_from_resolv() -> Optional[str]:
+            try:
+                with open("/etc/resolv.conf", "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("nameserver "):
+                            ip = line.split()[1]
+                            # IPv4만 간단히 허용
+                            if ip.count(".") == 3:
+                                return ip
+            except Exception:
+                return None
+            return None
+
+        def _ensure_http(url: str) -> str:
+            u = (url or "").strip()
+            if not u:
+                return ""
+            if not u.startswith("http://") and not u.startswith("https://"):
+                u = f"http://{u}"
+            return u
+
+        def _candidate_bases(env_base: Optional[str]) -> List[str]:
+            cands: List[str] = []
+            if env_base and env_base.lower() != "auto":
+                cands.append(_ensure_http(env_base))
+            # 공통 후보들 추가 (우선순위: wsl.localhost → Windows 호스트 IP → 127.0.0.1)
+            cands.append("http://wsl.localhost:11434")
+            ip = _read_windows_host_ip_from_resolv()
+            if ip:
+                cands.append(f"http://{ip}:11434")
+            cands.append("http://127.0.0.1:11434")
+            # 중복 제거, 빈 문자열 제거
+            seen = set()
+            uniq: List[str] = []
+            for b in cands:
+                if b and b not in seen:
+                    uniq.append(b)
+                    seen.add(b)
+            return uniq
+
+        def _pick_reachable_base(candidates: List[str]) -> Optional[str]:
+            for b in candidates:
+                try:
+                    r = requests.get(f"{b}/api/tags", timeout=2)
+                    if r.ok:
+                        return b
+                except Exception:
+                    continue
+            return None
+
+        env_base = (os.environ.get("OLLAMA_BASE_URL", "") or "").strip()
+        base = _pick_reachable_base(_candidate_bases(env_base)) or (env_base or "http://localhost:11434")
+        model = os.environ.get("OLLAMA_MODEL", "llama3.2:3b").strip() or "llama3.2:3b"
+        try:
+            print(f"[celery-ollama] base={base} (env={env_base}), model={model}")
+        except Exception:
+            pass
         body = {
             "model": model,
             "messages": [
@@ -83,7 +140,12 @@ def transform_prompt(prompt: str) -> str:
             "options": {"temperature": 0, "top_p": 1},
         }
         try:
-            r = requests.post(f"{base}/api/chat", headers={"Content-Type": "application/json"}, data=json.dumps(body), timeout=30)
+            r = requests.post(
+                f"{base}/api/chat",
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(body),
+                timeout=120,
+            )
         except Exception as e:
             raise RuntimeError(f"Ollama 연결 실패: {e}")
         if not r.ok:

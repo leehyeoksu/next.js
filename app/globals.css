@@ -3,14 +3,16 @@
 @tailwind utilities;
 
 :root {
-  /* Autumn brown/ivory palette */
-  --surface: #fff8ef;      /* ivory */
-  --surface-2: #fff1e1;    /* lighter ivory */
-  --border: #e7d7c4;       /* warm beige border */
-  --accent: #6f4f37;       /* brown */
-  --accent-hover: #5f432f; /* darker brown */
-  --text: #2b2622;         /* deep warm text */
-  --muted: #6b5b4d;        /* muted caption */
+  /* Space + teal palette */
+  --surface: #0b1020;          /* deep space */
+  --surface-2: #0f162d;        /* panel */
+  --border: #1c2541;           /* subtle border */
+  --accent: #14b8a6;           /* teal-500 for rings/links */
+  --accent-hover: #2dd4bf;     /* teal-400 */
+  --text: #ffffff;             /* white text */
+  --muted: #94a3b8;            /* slate */
+  --button: #6b7280;           /* gray-500 */
+  --button-hover: #4b5563;     /* gray-600 */
 }
 
 html, body {
@@ -19,3 +21,102 @@ html, body {
   font-family: Gulim, "굴림", "Malgun Gothic", "맑은 고딕", "Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
+/* Space background layers (stars + nebulas) */
+.space-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1200px 800px at -10% -10%, rgba(124,58,237,0.25), transparent 60%),
+    radial-gradient(1000px 700px at 110% -10%, rgba(14,165,233,0.18), transparent 60%),
+    radial-gradient(800px 600px at 50% 120%, rgba(59,130,246,0.15), transparent 60%),
+    var(--surface);
+}
+
+.space-bg::before,
+.space-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+}
+
+.space-bg::before {
+  background-image:
+    radial-gradient(1px 1px at 20px 30px, #ffffff88 1px, transparent 2px),
+    radial-gradient(1px 1px at 120px 80px, #ffffff66 1px, transparent 2px),
+    radial-gradient(1px 1px at 200px 150px, #ffffff55 1px, transparent 2px);
+  background-size: 200px 200px;
+  animation: twinkle 10s linear infinite;
+  opacity: 0.6;
+}
+
+.space-bg::after {
+  background-image:
+    radial-gradient(1px 1px at 60px 140px, #ffffff55 1px, transparent 2px),
+    radial-gradient(1px 1px at 160px 40px, #ffffff66 1px, transparent 2px),
+    radial-gradient(1px 1px at 240px 100px, #ffffff77 1px, transparent 2px);
+  background-size: 300px 300px;
+  animation: twinkle 12s linear infinite reverse;
+  opacity: 0.5;
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+  100% { opacity: 0.35; }
+}
+
+/* Center Earth planet */
+.planet-earth {
+  position: fixed;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  width: min(38vw, 360px);
+  height: min(38vw, 360px);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(120% 120% at 30% 30%, rgba(255,255,255,0.15), transparent 45%),
+    radial-gradient(120% 120% at 65% 70%, rgba(255,255,255,0.08), transparent 55%),
+    radial-gradient(100% 100% at 50% 50%, #0b3b5a 0%, #0a2a44 60%, #071b2c 100%);
+  box-shadow:
+    0 0 50px rgba(20,184,166,0.30),
+    0 0 140px rgba(20,184,166,0.18),
+    inset 0 0 35px rgba(45,212,191,0.25);
+}
+
+.planet-earth::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    conic-gradient(from 0deg,
+      rgba(34,197,94,0.0) 0deg 20deg,
+      rgba(34,197,94,0.25) 20deg 40deg,
+      rgba(34,197,94,0.0) 40deg 90deg,
+      rgba(34,197,94,0.22) 90deg 120deg,
+      rgba(34,197,94,0.0) 120deg 200deg,
+      rgba(34,197,94,0.20) 200deg 240deg,
+      rgba(34,197,94,0.0) 240deg 360deg);
+  filter: blur(1px) saturate(1.1);
+  animation: spin-slow 120s linear infinite;
+}
+
+.planet-earth::after {
+  content: "";
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  background: radial-gradient(60% 60% at 50% 40%, rgba(20,184,166,0.25), transparent 70%);
+  filter: blur(8px);
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

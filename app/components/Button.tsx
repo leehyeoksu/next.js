@@ -13,11 +13,11 @@ export default function Button({
   className = "",
   ...props
 }: ButtonProps) {
-  const base = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed";
+  const base = "inline-flex items-center justify-center rounded-full font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed";
   const sizes = size === "sm" ? "px-3 py-1.5 text-sm" : "px-4 py-2 text-sm";
   const styles =
     variant === "primary"
-      ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
+      ? "bg-[var(--button)] text-[#e5e7eb] hover:bg-[var(--button-hover)]"
       : "border border-[var(--border)] text-[var(--text)] hover:bg-[var(--surface-2)] hover:border-[var(--accent)]";
   return <button className={`${base} ${sizes} ${styles} ${className}`} {...props} />;
 }
