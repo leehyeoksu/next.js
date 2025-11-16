@@ -8,5 +8,4 @@ if (-not $env:APP_BASE_URL) {
 }
 
 Write-Host "[test] Running tests against $env:APP_BASE_URL" -ForegroundColor Cyan
-python -m unittest -v "$PSScriptRoot/../tests/test_app.py"
-
+python -m unittest discover -v -s "$PSScriptRoot/../tests" -p "test_*.py"

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getProvider, getOllamaBaseUrl, getOllamaModel } from "../../lib/config";
 
 const SYSTEM_PROMPT = `당신은 사용자의 입력을 명확한 프롬프트로 변환하는 도우미입니다.
 사용자의 의도를 파악하고, 요구사항을 정리하여 명확한 명령문으로 작성하세요.
@@ -24,7 +25,7 @@ const SYSTEM_PROMPT = `당신은 사용자의 입력을 명확한 프롬프트�
 
 export async function POST(req: Request) {
   try {
-    const provider = (process.env.LLM_PROVIDER || "openai").toLowerCase();
+    const provider = getProvider();
 
     const contentType = req.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
@@ -76,8 +77,8 @@ export async function POST(req: Request) {
     let output = "";
 
     if (provider === "ollama") {
-      const base = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-      const ollamaModel = process.env.OLLAMA_MODEL || "llama3.2:3b";
+      const base = getOllamaBaseUrl();
+      const ollamaModel = getOllamaModel();
       try {
         const resp = await fetch(`${base}/api/chat`, {
           method: "POST",

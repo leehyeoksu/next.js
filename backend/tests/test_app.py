@@ -1,12 +1,14 @@
 import os
 import unittest
 import urllib.parse
+from unittest.mock import patch, Mock
 
 try:
     import requests  # type: ignore
 except Exception as e:
     raise SystemExit("The 'requests' package is required. Install with: pip install -r backend/requirements.txt") from e
 
+import backend.celery.tasks as tasks
 
 BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:3000")
 
@@ -107,3 +109,58 @@ class TestHealthAndBackend(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+# ---- Unit tests (mocked network) merged from test_tasks.py ----
+
+class TestTransformPromptUnit(unittest.TestCase):
+    def test_ollama_with_mocks(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "ollama"}, clear=False):
+            # Mock reachability check for /api/tags
+            def fake_get(url, timeout=None):
+                m = Mock()
+                m.ok = True
+                m.status_code = 200
+                return m
+
+            # Mock chat response
+            def fake_post(url, headers=None, data=None, timeout=None):
+                m = Mock()
+                m.ok = True
+                m.status_code = 200
+                m.json.return_value = {"message": {"content": "UNIT-OUT"}}
+                return m
+
+            with patch.object(tasks.requests, "get", side_effect=fake_get), patch.object(
+                tasks.requests, "post", side_effect=fake_post
+            ):
+                out = tasks.transform_prompt("hello")
+                self.assertEqual(out, "UNIT-OUT")
+
+    def test_openai_with_mocks(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "openai", "OPENAI_API_KEY": "dummy"}, clear=False):
+            def fake_post(url, headers=None, data=None, timeout=None):
+                m = Mock()
+                m.ok = True
+                m.status_code = 200
+                m.json.return_value = {
+                    "choices": [
+                        {"message": {"content": "OPENAI-OUT"}},
+                    ]
+                }
+                return m
+
+            with patch.object(tasks.requests, "post", side_effect=fake_post):
+                out = tasks.transform_prompt("hello")
+                self.assertEqual(out, "OPENAI-OUT")
+
+    def test_openai_no_key_fallback(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "openai"}, clear=False):
+            # Ensure key is absent in this context
+            os.environ.pop("OPENAI_API_KEY", None)
+            out = tasks.transform_prompt("sample")
+            self.assertIn("목표:", out)
+
+    def test_empty_prompt_uses_fallback(self):
+        out = tasks.transform_prompt("")
+        self.assertIn("목표:", out)

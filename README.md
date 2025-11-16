@@ -46,6 +46,10 @@ Backend-oriented tests live in `backend/`. They call the running Next.js app ove
 
 Note: The test suite assumes `LLM_PROVIDER=mock` so `/api/gpt` does not call external services.
 
+### Unit tests with mocks
+- Additional unit tests for Celery tasks live in `backend/tests/test_tasks.py`.
+- They mock network calls (`requests.get/post`) so they run without external services.
+
 ## Orchestrated Dev (Next + FastAPI + optional Celery)
 
 Run everything with one command using `dev.config.json` and a small Node orchestrator.
@@ -81,3 +85,13 @@ Scripts in `package.json` (manual runs)
 - Frontend only: `npm run dev:next`
 - API only: `npm run dev:api`
 - Celery only: `npm run dev:celery`
+
+## Ollama 설정 통일(DEV)
+- 공통 설정 로더: `app/lib/config.ts`
+  - 우선순위: 환경변수 > `dev.config.json`의 `celery.env` > 기본값
+  - 키: `LLM_PROVIDER`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL`
+- 적용 위치:
+  - Next API: `app/api/gpt/route.ts`, `app/api/health/route.ts`
+  - Celery 태스크: `backend/celery/tasks.py` (ENV 비어 있으면 `dev.config.json` 보완)
+  
+TIP: 개발 중에는 `dev.config.json`의 `celery.env` 값을 수정하면 Next/Celery가 같은 모델/주소를 참조합니다. 배포 시에는 환경변수를 사용하세요.

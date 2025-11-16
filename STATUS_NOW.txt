@@ -1,38 +1,39 @@
-현재 상황 요약 (WSL + Docker + Celery + Ollama)
+현재 상태 요약 (WSL + Docker + Celery + Ollama)
 
-1) 프로젝트 구성 간단 정리
-- Next.js(Windows, 3000) ↔ Bridge FastAPI(WSL, 8001) ↔ Celery 워커(WSL) ↔ Redis(Docker, 6379)
-- Celery 태스크: tasks.transform_prompt → LLM_PROVIDER=ollama 일 때 Ollama에 /api/chat 호출
-- Redis는 Docker 볼륨(+AOF)으로 영구화, 자동 재시작 설정 적용
+1) 구성 개요
+- Next.js: Windows, http://localhost:3000
+- FastAPI(main): WSL(Ubuntu), http://127.0.0.1:8000
+- Celery Worker: WSL(Ubuntu)
+- Celery Bridge: WSL(Ubuntu), http://wsl.localhost:8001
+- Redis: Docker on Windows, port 6379 exposed
+- LLM: Ollama on WSL, http://127.0.0.1:11434, model=llama3.2:3b
 
-2) 지금까지의 문제와 원인
-- /api/jobs 큐 등록/폴링은 정상(200)이지만, 작업 실패로 결과가 비어 있음
-- Celery 로그에 "Ollama 연결 실패(127.0.0.1:11434, Connection refused)" → WSL 내 Ollama 미설치/미기동/모델 미다운로드가 원인
+2) 동작 확인 결과
+- Ollama(WSL): `curl -s http://127.0.0.1:11434/api/tags` → models에 `llama3.2:3b` 표시
+- Redis(Docker): `docker ps` → `redis` 컨테이너, `0.0.0.0:6379->6379/tcp`
+- Redis 핑(WSL): `redis-cli -h 127.0.0.1 -p 6379 ping` → PONG
+- Celery 로그: `[celery-ollama] base=http://127.0.0.1:11434, model=llama3.2:3b` 확인
 
-3) 현재 상태(정상 동작하는 부분)
-- Next.js(3000), FastAPI(8000), Bridge(8001), Celery 워커, Redis 컨테이너 정상
-- Bridge 헬스: http://wsl.localhost:8001/result/health-check 응답 OK
-- Next에서 Bridge 주소: CELERY_API_BASE=http://localhost:8001
+3) 환경/설정 스냅샷
+- `.env.local`
+  - `LLM_PROVIDER=ollama`
+  - `OLLAMA_BASE_URL=http://127.0.0.1:11434`
+  - `CELERY_API_BASE=http://wsl.localhost:8001` (권장값)
+- `dev.config.json`
+  - Celery/Bridge는 `runInWsl: true`, Ollama/Redis 값 개발 기본 설정 포함
 
-4) 해결 방법(WSL에서 Ollama 설치/실행/모델 준비)
-- 설치(없으면 설치됨):
-  wsl -d Ubuntu -- bash -lc "command -v ollama >/dev/null 2>&1 || (curl -fsSL https://ollama.com/install.sh | sh)"
-- 서버 실행(백그라운드):
-  wsl -d Ubuntu -- bash -lc "pgrep -f 'ollama serve' >/dev/null 2>&1 || (nohup ollama serve >/dev/null 2>&1 & sleep 1)"
-- 모델 다운로드:
-  wsl -d Ubuntu -- bash -lc "ollama pull llama3.2:3b-instruct"
-- 확인:
-  wsl -d Ubuntu -- bash -lc "curl -s http://127.0.0.1:11434/api/tags || echo 'ollama not reachable'"
-- 완료 후 앱에서 프롬프트 "생성" 다시 시도
+4) 운영 명령 모음
+- Docker Redis 강제 재기동(기본):
+  `docker rm -f redis 2>$null; docker run -d --name redis -p 6379:6379 -v redis-data:/data --restart unless-stopped redis:alpine`
+- Docker Redis(AOF):
+  `docker rm -f redis 2>$null; docker run -d --name redis -p 6379:6379 -v redis-data:/data --restart unless-stopped redis:alpine redis-server --appendonly yes`
+- Ollama 서비스(WSL):
+  `sudo systemctl enable --now ollama`  또는  `nohup ollama serve >/dev/null 2>&1 &`
+- 앱 실행(Windows 루트):
+  `npm run dev`
 
-5) 대안(임시)
-- 모델 준비 없이 흐름만 확인: Celery 환경변수 LLM_PROVIDER=mock 로 변경 후 npm run dev
+5) 메모/주의 사항
+- Next의 `/api/jobs`는 `.env.local`의 `CELERY_API_BASE`를 사용합니다. WSL 브릿지 접근 위해 `http://wsl.localhost:8001` 권장.
+- Redis URL은 코드에서 `localhost`로 하드코딩되어 있습니다. 필요 시 환경변수 사용으로 변경하는 소규모 패치 가능.
 
-6) 변경/개발 내역 요약
-- Redis 컨테이너 영구화(AOF) 가이드 및 설정
-- dev orchestrator에 Bridge(8001) 자동 실행 추가, Celery 워커를 tasks 모듈로 통일
-- Celery 태스크에 OpenAI/Ollama 호출 분기 추가(키/서버 없으면 결정론적 폴백)
-- 프런트 입력 폼을 큐 단일 경로로 단순화(즉시 호출 제거)
-- Bridge import 오류 수정 및 헬스 엔드포인트 추가
-
-이 파일은 프로젝트 루트(C:\Users\User\myapp\STATUS_NOW.txt)에 저장되었습니다.
+파일 위치: C:\Users\User\myapp\STATUS_NOW.txt

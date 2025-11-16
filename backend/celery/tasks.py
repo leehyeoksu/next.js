@@ -72,6 +72,22 @@ def transform_prompt(prompt: str) -> str:
 
     # 1) Ollama (로컬 무료 모델)
     if provider == "ollama":
+        def _read_dev_celery_env() -> dict:
+            try:
+                p = os.path.join(os.getcwd(), "dev.config.json")
+                if not os.path.exists(p):
+                    return {}
+                with open(p, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                for svc in (cfg.get("services") or []):
+                    try:
+                        if svc.get("name") == "celery" and isinstance(svc.get("env"), dict):
+                            return svc.get("env") or {}
+                    except Exception:
+                        continue
+                return {}
+            except Exception:
+                return {}
         def _read_windows_host_ip_from_resolv() -> Optional[str]:
             try:
                 with open("/etc/resolv.conf", "r", encoding="utf-8") as f:
@@ -123,9 +139,10 @@ def transform_prompt(prompt: str) -> str:
                     continue
             return None
 
-        env_base = (os.environ.get("OLLAMA_BASE_URL", "") or "").strip()
+        dev_env = _read_dev_celery_env()
+        env_base = (os.environ.get("OLLAMA_BASE_URL", "") or dev_env.get("OLLAMA_BASE_URL", "") or "").strip()
         base = _pick_reachable_base(_candidate_bases(env_base)) or (env_base or "http://localhost:11434")
-        model = os.environ.get("OLLAMA_MODEL", "llama3.2:3b").strip() or "llama3.2:3b"
+        model = (os.environ.get("OLLAMA_MODEL", "") or dev_env.get("OLLAMA_MODEL", "") or "llama3.2:3b").strip() or "llama3.2:3b"
         try:
             print(f"[celery-ollama] base={base} (env={env_base}), model={model}")
         except Exception:

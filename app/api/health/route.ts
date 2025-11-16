@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getProvider, getOllamaBaseUrl } from "../../lib/config";
 
 async function checkUrl(url: string, opts?: { timeoutMs?: number }) {
   const controller = new AbortController();
@@ -16,10 +17,10 @@ async function checkUrl(url: string, opts?: { timeoutMs?: number }) {
 
 export async function GET() {
   try {
-    const provider = (process.env.LLM_PROVIDER || "openai").toLowerCase();
+    const provider = getProvider();
 
     // Ollama
-    const ollamaBase = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+    const ollamaBase = getOllamaBaseUrl();
     const ollama = await checkUrl(`${ollamaBase}/api/tags`).catch(() => ({ ok: false }));
 
     // OpenAI (config check only)
@@ -55,4 +56,3 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
-
