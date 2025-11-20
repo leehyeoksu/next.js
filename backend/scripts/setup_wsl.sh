@@ -5,10 +5,9 @@ set -euo pipefail
 ROOT="/mnt/c/Users/User/myapp"
 cd "$ROOT/backend"
 
-python3 -m venv .venv-linux
-source .venv-linux/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 
-echo "[setup_wsl] done: venv at $(pwd)/.venv-linux"
-
+echo "[setup_wsl] done: venv at $(pwd)/.venv"

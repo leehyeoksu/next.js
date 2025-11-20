@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const base = process.env.CELERY_API_BASE || "http://127.0.0.1:8000";
+    const base = process.env.CELERY_API_BASE || "http://wsl.localhost:8001";
     const contentType = req.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
       return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 400 });
@@ -28,4 +28,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Celery API connect failed: ${msg}` }, { status: 502 });
   }
 }
-
